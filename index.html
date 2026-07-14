@@ -45,6 +45,7 @@
     padding:18px 16px 130px;
   }
 
+  /* --- signature element: signal-strength step indicator --- */
   .signal{
     display:flex; align-items:flex-end; gap:5px;
     height:20px; margin-bottom:6px;
@@ -266,26 +267,31 @@
   <h1>خرید سرویس ⚡️</h1>
   <p class="subtitle">سرویس، حجم و مدل موردنظرت رو انتخاب کن، اگه کد تخفیف داری وارد کن و مستقیم از کیف‌پولت پرداخت کن.</p>
 
+  <!-- STEP 1: نوع سرویس -->
   <div class="section" id="step-type">
     <div class="section-title"><span class="num">1</span> نوع سرویس</div>
     <div class="grid" id="typeGrid" style="grid-template-columns:1fr;"></div>
   </div>
 
+  <!-- STEP 2: حجم -->
   <div class="section" id="step-gig" style="display:none;">
     <div class="section-title"><span class="num">2</span> حجم سرویس</div>
     <div class="grid cols-3" id="gigGrid"></div>
   </div>
 
+  <!-- STEP 3: مدل -->
   <div class="section" id="step-plan" style="display:none;">
     <div class="section-title"><span class="num">3</span> مدل سرویس</div>
     <div class="grid cols-2" id="planGrid"></div>
   </div>
 
+  <!-- STEP 4: تعداد کاربر -->
   <div class="section" id="step-count" style="display:none;">
     <div class="section-title"><span class="num">4</span> تعداد کاربر همزمان</div>
     <div class="count-row" id="countRow"></div>
   </div>
 
+  <!-- کد تخفیف -->
   <div class="section" id="step-discount" style="display:none;">
     <div class="section-title">🏷 کد تخفیف <span style="color:var(--muted); font-weight:400;">(اختیاری)</span></div>
     <div class="discount-box">
@@ -294,6 +300,7 @@
     <div class="discount-tag" id="discountTag">✓ کد تخفیف اعمال می‌شود هنگام ثبت نهایی</div>
   </div>
 
+  <!-- خلاصه -->
   <div class="section" id="step-summary" style="display:none;">
     <div class="section-title">🧾 پیش‌فاکتور</div>
     <div class="summary">
@@ -325,6 +332,7 @@
 
 <script>
 const tg = window.Telegram ? window.Telegram.WebApp : null;
+const tgReady = !!(tg && tg.initData);
 if (tg) {
   tg.ready();
   tg.expand();
@@ -332,14 +340,21 @@ if (tg) {
     document.documentElement.style.setProperty('--bg', tg.themeParams.bg_color || '#0a0e16');
   } catch(e) {}
 }
+// اگر initData خالی باشد یعنی صفحه از طریق دکمه رسمی ربات (KeyboardButton/InlineButton با web_app) باز نشده
+// (مثلاً از یک لینک معمولی یا مرورگر باز شده) و در این حالت ارسال سفارش به ربات کار نخواهد کرد.
+if (!tgReady) {
+  setTimeout(()=> toast('⚠️ این صفحه باید از داخل دکمه «خرید سریع» ربات باز شود', 'err'), 400);
+}
 
+/* ================= پیکربندی قیمت‌ها (باید با تنظیمات ربات هماهنگ باشد) ================= */
+/* ⚠️ اگر قیمت‌ها را از پنل مدیریت ربات تغییر دادید، این مقادیر را هم دستی آپدیت کنید. */
 const SERVICES = {
   normal: {
     label: "وی‌پی‌ان (V2rayNG)",
     icon: "🟣",
     desc: "اتصال با اپلیکیشن V2rayNG — بعد از خرید لینک اتصال دریافت می‌کنید",
     pricePerGig: 10000,
-    gigs: [10, 20, 30, 40, 50],
+    gigs: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
     plans: { standard: "STANDARD 🚧", gold: "GOLD 🥇", pro: "PRO 🏆", xr: "𝕏.R 💎" }
   },
   iranspeedy: {
@@ -375,6 +390,7 @@ function haptic(style){
   if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred(style || 'light');
 }
 
+/* ---------- رندر مرحله ۱: نوع سرویس ---------- */
 const typeGrid = document.getElementById('typeGrid');
 Object.keys(SERVICES).forEach(key=>{
   const s = SERVICES[key];
@@ -398,6 +414,7 @@ Object.keys(SERVICES).forEach(key=>{
   typeGrid.appendChild(el);
 });
 
+/* ---------- مرحله ۲: حجم ---------- */
 function renderGigStep(){
   const s = SERVICES[state.serviceKey];
   const grid = document.getElementById('gigGrid');
@@ -426,6 +443,7 @@ function renderGigStep(){
   refreshSummary();
 }
 
+/* ---------- مرحله ۳: مدل ---------- */
 function renderPlanStep(){
   const s = SERVICES[state.serviceKey];
   const grid = document.getElementById('planGrid');
@@ -451,6 +469,7 @@ function renderPlanStep(){
   document.getElementById('step-summary').style.display = 'none';
 }
 
+/* ---------- مرحله ۴: تعداد کاربر ---------- */
 function renderCountStep(){
   const row = document.getElementById('countRow');
   row.innerHTML = '';
@@ -472,11 +491,13 @@ function renderCountStep(){
   document.getElementById('step-count').style.display = 'block';
 }
 
+/* ---------- کد تخفیف ---------- */
 const discountInput = document.getElementById('discountInput');
 discountInput.addEventListener('input', ()=>{
   document.getElementById('discountTag').classList.toggle('show', discountInput.value.trim().length > 0);
 });
 
+/* ---------- نوار سیگنال (پیشرفت مراحل) ---------- */
 function updateSignal(step){
   const bars = document.querySelectorAll('#signal i');
   bars.forEach((b,i)=> b.classList.toggle('on', i < step));
@@ -490,6 +511,7 @@ function updateSignal(step){
 }
 updateSignal(1);
 
+/* ---------- خلاصه و دکمه نهایی ---------- */
 function refreshSummary(){
   const ready = state.serviceKey && state.gig && state.planKey && state.usersCount;
   const goBtn = document.getElementById('goBtn');
@@ -530,15 +552,22 @@ document.getElementById('goBtn').addEventListener('click', ()=>{
 
   haptic('medium');
 
+  if (!tgReady) {
+    toast('❌ این صفحه درست باز نشده؛ از دکمه «خرید سریع» داخل ربات وارد شوید', 'err');
+    return;
+  }
+
   if (tg && tg.sendData){
     tg.sendData(JSON.stringify(payload));
     tg.close();
   } else {
+    // برای تست خارج از تلگرام
     toast('این دکمه فقط داخل تلگرام کار می‌کند', 'err');
     console.log(payload);
   }
 });
 
+/* موجودی کیف‌پول از initData (اختیاری - اگر ربات از طریق start_param ارسال کند) */
 try{
   const params = new URLSearchParams(window.location.search);
   const bal = params.get('balance');
@@ -546,4 +575,4 @@ try{
 }catch(e){}
 </script>
 </body>
-  </html>
+</html>
