@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>خرید سرویس</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0e16;
+    --bg-grid: #0d1220;
+    --surface: #121826;
+    --surface-2: #1a2233;
+    --surface-3: #212c42;
+    --line: #232d42;
+    --text: #eaf0f6;
+    --muted: #7c8797;
+    --cyan: #46e5d4;
+    --violet: #8a7bf7;
+    --danger: #ff5c7a;
+    --success: #3ecf8e;
+    --radius: 18px;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    margin:0; padding:0;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(138,123,247,0.14), transparent 45%),
+      radial-gradient(circle at 100% 15%, rgba(70,229,212,0.10), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Vazirmatn', sans-serif;
+    min-height:100vh;
+  }
+
+  .mono{ font-family:'JetBrains Mono', monospace; direction:ltr; unicode-bidi:isolate; }
+
+  .wrap{
+    max-width:520px;
+    margin:0 auto;
+    padding:18px 16px 130px;
+  }
+
+  .signal{
+    display:flex; align-items:flex-end; gap:5px;
+    height:20px; margin-bottom:6px;
+  }
+  .signal i{
+    display:block; width:7px; border-radius:3px;
+    background:var(--surface-3);
+    transition:background .35s ease, box-shadow .35s ease;
+  }
+  .signal i:nth-child(1){ height:6px; }
+  .signal i:nth-child(2){ height:11px; }
+  .signal i:nth-child(3){ height:16px; }
+  .signal i:nth-child(4){ height:20px; }
+  .signal i.on{ background:var(--cyan); box-shadow:0 0 10px rgba(70,229,212,.55); }
+
+  .topbar{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:22px;
+  }
+  .topbar .step-label{ color:var(--muted); font-size:12.5px; }
+  .topbar .balance{
+    font-size:12.5px; color:var(--muted);
+  }
+  .topbar .balance b{ color:var(--cyan); font-weight:700; }
+
+  h1{
+    font-size:21px; font-weight:800; margin:0 0 4px;
+    letter-spacing:-.2px;
+  }
+  .subtitle{ color:var(--muted); font-size:13.5px; margin:0 0 20px; line-height:1.9; }
+
+  .grid{ display:grid; gap:12px; }
+  .grid.cols-2{ grid-template-columns:1fr 1fr; }
+  .grid.cols-3{ grid-template-columns:1fr 1fr 1fr; }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 14px;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    transition:border-color .2s ease, transform .15s ease, background .2s ease;
+  }
+  .card:active{ transform:scale(.97); }
+  .card.selected{
+    border-color:var(--cyan);
+    background:linear-gradient(180deg, rgba(70,229,212,.10), rgba(70,229,212,.02));
+  }
+  .card.selected::after{
+    content:"";
+    position:absolute; inset:0;
+    border-radius:var(--radius);
+    box-shadow:0 0 0 1px rgba(70,229,212,.35), 0 0 24px rgba(70,229,212,.18);
+    pointer-events:none;
+  }
+
+  .type-card{ display:flex; flex-direction:column; gap:10px; padding:18px 16px; }
+  .type-card .icon{
+    width:42px; height:42px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px;
+    background:var(--surface-2);
+  }
+  .type-card .name{ font-weight:700; font-size:15px; }
+  .type-card .desc{ font-size:12px; color:var(--muted); line-height:1.7; }
+  .type-card .via{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11px; color:var(--violet);
+    margin-top:2px;
+  }
+  .type-card .pulse{
+    width:6px; height:6px; border-radius:50%; background:var(--cyan);
+    box-shadow:0 0 0 0 rgba(70,229,212,.6);
+  }
+  .type-card.selected .pulse{ animation:pulse 1.6s infinite; }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(70,229,212,.55); }
+    70%{ box-shadow:0 0 0 8px rgba(70,229,212,0); }
+    100%{ box-shadow:0 0 0 0 rgba(70,229,212,0); }
+  }
+
+  .chip{
+    text-align:center;
+    padding:14px 8px;
+    font-weight:700;
+  }
+  .chip .gb{ font-size:16px; }
+  .chip .price{
+    display:block; margin-top:6px; font-size:11.5px; color:var(--muted); font-weight:500;
+  }
+  .chip.selected .price{ color:var(--cyan); }
+
+  .plan-card{ text-align:center; padding:16px 10px; }
+  .plan-card .name{ font-weight:800; font-size:14px; letter-spacing:.3px; }
+
+  .section{ margin-bottom:26px; }
+  .section-title{
+    font-size:13px; color:var(--muted); margin-bottom:12px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-title .num{
+    width:20px; height:20px; border-radius:6px;
+    background:var(--surface-2); color:var(--cyan);
+    font-size:11px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  .count-row{ display:flex; gap:12px; }
+  .count-row .card{ flex:1; text-align:center; font-weight:700; padding:14px; }
+
+  .discount-box{
+    display:flex; gap:8px;
+  }
+  .discount-box input{
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 14px;
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    font-size:14px;
+    direction:ltr;
+    text-align:left;
+    outline:none;
+  }
+  .discount-box input:focus{ border-color:var(--violet); }
+  .discount-box input::placeholder{ color:var(--muted); font-family:'Vazirmatn', sans-serif; }
+  .discount-tag{
+    font-size:11px; color:var(--success); margin-top:8px; display:none;
+  }
+  .discount-tag.show{ display:block; }
+
+  .summary{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+  }
+  .summary-row{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:13px; color:var(--muted);
+    padding:7px 0;
+  }
+  .summary-row b{ color:var(--text); font-weight:600; }
+  .summary-divider{ height:1px; background:var(--line); margin:8px 0; }
+  .summary-total{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-top:6px;
+  }
+  .summary-total .label{ font-size:13px; color:var(--muted); }
+  .summary-total .value{
+    font-family:'JetBrains Mono', monospace;
+    font-size:22px; font-weight:700; color:var(--cyan);
+    direction:ltr;
+  }
+  .summary-total .value small{ font-size:12px; color:var(--muted); margin-right:6px; }
+
+  .empty-hint{
+    text-align:center; color:var(--muted); font-size:12.5px;
+    padding:40px 10px;
+  }
+
+  .bottom-bar{
+    position:fixed; bottom:0; left:0; right:0;
+    padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg, rgba(10,14,22,0) 0%, rgba(10,14,22,.92) 22%, rgba(10,14,22,1) 100%);
+  }
+  .bottom-inner{
+    max-width:520px; margin:0 auto;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .bottom-inner .price-block .lbl{ font-size:11px; color:var(--muted); }
+  .bottom-inner .price-block .val{
+    font-family:'JetBrains Mono', monospace; font-size:17px; font-weight:700; color:var(--text);
+    direction:ltr;
+  }
+  .go-btn{
+    background:linear-gradient(90deg, var(--cyan), var(--violet));
+    color:#08101a; border:none; border-radius:12px;
+    padding:12px 22px; font-weight:800; font-size:13.5px;
+    font-family:'Vazirmatn', sans-serif;
+  }
+  .go-btn:disabled{ opacity:.4; }
+
+  .toast{
+    position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-20px);
+    background:var(--surface-3); border:1px solid var(--line);
+    padding:10px 18px; border-radius:12px; font-size:12.5px;
+    opacity:0; transition:all .25s ease; pointer-events:none;
+    z-index:20;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.err{ border-color:rgba(255,92,122,.4); color:var(--danger); }
+  .toast.ok{ border-color:rgba(62,207,142,.4); color:var(--success); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="signal" id="signal">
+        <i></i><i></i><i></i><i></i>
+      </div>
+      <div class="step-label" id="stepLabel">مرحله ۱ از ۴ — انتخاب نوع سرویس</div>
+    </div>
+    <div class="balance">کیف‌پول: <b id="balanceVal" class="mono">—</b></div>
+  </div>
+
+  <h1>خرید سرویس ⚡️</h1>
+  <p class="subtitle">سرویس، حجم و مدل موردنظرت رو انتخاب کن، اگه کد تخفیف داری وارد کن و مستقیم از کیف‌پولت پرداخت کن.</p>
+
+  <div class="section" id="step-type">
+    <div class="section-title"><span class="num">1</span> نوع سرویس</div>
+    <div class="grid" id="typeGrid" style="grid-template-columns:1fr;"></div>
+  </div>
+
+  <div class="section" id="step-gig" style="display:none;">
+    <div class="section-title"><span class="num">2</span> حجم سرویس</div>
+    <div class="grid cols-3" id="gigGrid"></div>
+  </div>
+
+  <div class="section" id="step-plan" style="display:none;">
+    <div class="section-title"><span class="num">3</span> مدل سرویس</div>
+    <div class="grid cols-2" id="planGrid"></div>
+  </div>
+
+  <div class="section" id="step-count" style="display:none;">
+    <div class="section-title"><span class="num">4</span> تعداد کاربر همزمان</div>
+    <div class="count-row" id="countRow"></div>
+  </div>
+
+  <div class="section" id="step-discount" style="display:none;">
+    <div class="section-title">🏷 کد تخفیف <span style="color:var(--muted); font-weight:400;">(اختیاری)</span></div>
+    <div class="discount-box">
+      <input id="discountInput" class="mono" placeholder="مثلاً OFF20" autocomplete="off" />
+    </div>
+    <div class="discount-tag" id="discountTag">✓ کد تخفیف اعمال می‌شود هنگام ثبت نهایی</div>
+  </div>
+
+  <div class="section" id="step-summary" style="display:none;">
+    <div class="section-title">🧾 پیش‌فاکتور</div>
+    <div class="summary">
+      <div class="summary-row"><span>نوع سرویس</span><b id="sumType">—</b></div>
+      <div class="summary-row"><span>حجم</span><b id="sumGig">—</b></div>
+      <div class="summary-row"><span>مدل</span><b id="sumPlan">—</b></div>
+      <div class="summary-row"><span>تعداد کاربر</span><b id="sumCount">—</b></div>
+      <div class="summary-divider"></div>
+      <div class="summary-total">
+        <span class="label">مبلغ قابل پرداخت</span>
+        <span class="value mono" id="sumPrice">0<small>تومان</small></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="bottom-bar">
+  <div class="bottom-inner">
+    <div class="price-block">
+      <div class="lbl">مبلغ نهایی</div>
+      <div class="val mono" id="bottomPrice">۰ تومان</div>
+    </div>
+    <button class="go-btn" id="goBtn" disabled>ثبت و پرداخت از کیف‌پول</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  try {
+    document.documentElement.style.setProperty('--bg', tg.themeParams.bg_color || '#0a0e16');
+  } catch(e) {}
+}
+
+const SERVICES = {
+  normal: {
+    label: "وی‌پی‌ان (V2rayNG)",
+    icon: "🟣",
+    desc: "اتصال با اپلیکیشن V2rayNG — بعد از خرید لینک اتصال دریافت می‌کنید",
+    pricePerGig: 10000,
+    gigs: [10, 20, 30, 40, 50],
+    plans: { standard: "STANDARD 🚧", gold: "GOLD 🥇", pro: "PRO 🏆", xr: "𝕏.R 💎" }
+  },
+  iranspeedy: {
+    label: "ایران‌اسپیدی",
+    icon: "🟢",
+    desc: "اتصال با اپلیکیشن IranSpeedy — بعد از خرید یوزرنیم/پسورد دریافت می‌کنید",
+    pricePerGig: 7000,
+    gigs: [10, 20, 30, 40, 50],
+    plans: { pro: "PRO", diamond: "DIAMOND", gold: "GOLD" }
+  },
+  star: {
+    label: "استارلینک",
+    icon: "🛰",
+    desc: "اتصال با اپلیکیشن NapsternetV — بعد از خرید لینک اتصال دریافت می‌کنید",
+    pricePerGig: 200000,
+    gigs: [1, 2, 3],
+    plans: null
+  }
+};
+
+let state = { serviceKey: null, gig: null, planKey: null, planLabel: null, usersCount: null };
+
+function fmt(n){ return n.toLocaleString('en-US'); }
+
+function toast(msg, type){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(()=> el.className = 'toast', 1800);
+}
+
+function haptic(style){
+  if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred(style || 'light');
+}
+
+const typeGrid = document.getElementById('typeGrid');
+Object.keys(SERVICES).forEach(key=>{
+  const s = SERVICES[key];
+  const el = document.createElement('div');
+  el.className = 'card type-card';
+  el.innerHTML = `
+    <div class="icon">${s.icon}</div>
+    <div class="name">${s.label}</div>
+    <div class="desc">${s.desc}</div>
+    <div class="via"><span class="pulse"></span> هر گیگ از ${fmt(s.pricePerGig)} تومان</div>
+  `;
+  el.onclick = ()=>{
+    haptic();
+    document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    state.serviceKey = key;
+    state.gig = null; state.planKey = null; state.usersCount = null;
+    renderGigStep();
+    updateSignal(2);
+  };
+  typeGrid.appendChild(el);
+});
+
+function renderGigStep(){
+  const s = SERVICES[state.serviceKey];
+  const grid = document.getElementById('gigGrid');
+  grid.innerHTML = '';
+  s.gigs.forEach(g=>{
+    const price = g * s.pricePerGig;
+    const el = document.createElement('div');
+    el.className = 'card chip';
+    el.innerHTML = `<span class="gb">${g} گیگ</span><span class="price mono">${fmt(price)} ت</span>`;
+    el.onclick = ()=>{
+      haptic();
+      grid.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+      el.classList.add('selected');
+      state.gig = g;
+      state.planKey = null; state.usersCount = null;
+      if (s.plans) { renderPlanStep(); updateSignal(3); }
+      else { state.planKey = 'starstd'; state.planLabel = 'استارلینک استاندارد'; renderCountStep(); updateSignal(4); }
+    };
+    grid.appendChild(el);
+  });
+  document.getElementById('step-gig').style.display = 'block';
+  document.getElementById('step-plan').style.display = 'none';
+  document.getElementById('step-count').style.display = 'none';
+  document.getElementById('step-discount').style.display = 'none';
+  document.getElementById('step-summary').style.display = 'none';
+  refreshSummary();
+}
+
+function renderPlanStep(){
+  const s = SERVICES[state.serviceKey];
+  const grid = document.getElementById('planGrid');
+  grid.innerHTML = '';
+  Object.keys(s.plans).forEach(pk=>{
+    const el = document.createElement('div');
+    el.className = 'card plan-card';
+    el.innerHTML = `<div class="name">${s.plans[pk]}</div>`;
+    el.onclick = ()=>{
+      haptic();
+      grid.querySelectorAll('.plan-card').forEach(c=>c.classList.remove('selected'));
+      el.classList.add('selected');
+      state.planKey = pk;
+      state.planLabel = s.plans[pk];
+      renderCountStep();
+      updateSignal(4);
+    };
+    grid.appendChild(el);
+  });
+  document.getElementById('step-plan').style.display = 'block';
+  document.getElementById('step-count').style.display = 'none';
+  document.getElementById('step-discount').style.display = 'none';
+  document.getElementById('step-summary').style.display = 'none';
+}
+
+function renderCountStep(){
+  const row = document.getElementById('countRow');
+  row.innerHTML = '';
+  [1, 2].forEach(n=>{
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.textContent = n + '️⃣ کاربر';
+    el.onclick = ()=>{
+      haptic();
+      row.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));
+      el.classList.add('selected');
+      state.usersCount = n;
+      document.getElementById('step-discount').style.display = 'block';
+      document.getElementById('step-summary').style.display = 'block';
+      refreshSummary();
+    };
+    row.appendChild(el);
+  });
+  document.getElementById('step-count').style.display = 'block';
+}
+
+const discountInput = document.getElementById('discountInput');
+discountInput.addEventListener('input', ()=>{
+  document.getElementById('discountTag').classList.toggle('show', discountInput.value.trim().length > 0);
+});
+
+function updateSignal(step){
+  const bars = document.querySelectorAll('#signal i');
+  bars.forEach((b,i)=> b.classList.toggle('on', i < step));
+  const labels = {
+    1: 'مرحله ۱ از ۴ — انتخاب نوع سرویس',
+    2: 'مرحله ۲ از ۴ — انتخاب حجم',
+    3: 'مرحله ۳ از ۴ — انتخاب مدل',
+    4: 'مرحله ۴ از ۴ — تعداد کاربر و پرداخت'
+  };
+  document.getElementById('stepLabel').textContent = labels[step] || labels[1];
+}
+updateSignal(1);
+
+function refreshSummary(){
+  const ready = state.serviceKey && state.gig && state.planKey && state.usersCount;
+  const goBtn = document.getElementById('goBtn');
+
+  if (!ready){
+    goBtn.disabled = true;
+    document.getElementById('bottomPrice').textContent = '۰ تومان';
+    return;
+  }
+
+  const s = SERVICES[state.serviceKey];
+  const price = state.gig * s.pricePerGig;
+
+  document.getElementById('sumType').textContent = s.icon + ' ' + s.label;
+  document.getElementById('sumGig').textContent = state.gig + ' گیگ';
+  document.getElementById('sumPlan').textContent = state.planLabel || '—';
+  document.getElementById('sumCount').textContent = state.usersCount + ' کاربر';
+  document.getElementById('sumPrice').innerHTML = fmt(price) + '<small>تومان</small>';
+  document.getElementById('bottomPrice').textContent = fmt(price) + ' تومان';
+
+  goBtn.disabled = false;
+}
+
+document.getElementById('goBtn').addEventListener('click', ()=>{
+  if (!state.serviceKey || !state.gig || !state.planKey || !state.usersCount){
+    toast('لطفاً همه مراحل را کامل کنید', 'err');
+    return;
+  }
+
+  const payload = {
+    action: 'buy_service',
+    service_key: state.serviceKey,
+    gig: state.gig,
+    plan_key: state.planKey,
+    users_count: state.usersCount,
+    discount_code: discountInput.value.trim() || null
+  };
+
+  haptic('medium');
+
+  if (tg && tg.sendData){
+    tg.sendData(JSON.stringify(payload));
+    tg.close();
+  } else {
+    toast('این دکمه فقط داخل تلگرام کار می‌کند', 'err');
+    console.log(payload);
+  }
+});
+
+try{
+  const params = new URLSearchParams(window.location.search);
+  const bal = params.get('balance');
+  if (bal) document.getElementById('balanceVal').textContent = fmt(parseInt(bal)) + ' ت';
+}catch(e){}
+</script>
+</body>
+  </html>
