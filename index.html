@@ -96,6 +96,15 @@
   }
   .admin-trigger:active{ opacity:1; }
 
+  .support-box{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top:18px; padding:13px; border-radius:14px;
+    background:linear-gradient(135deg, rgba(70,229,212,0.10), rgba(138,123,247,0.08));
+    border:1px solid var(--line); font-size:13px;
+  }
+  .support-box span{ color:var(--muted); }
+  .support-box a{ color:var(--cyan); font-weight:700; text-decoration:none; direction:ltr; unicode-bidi:isolate; }
+
   .overlay{
     position:fixed; inset:0; background:rgba(5,7,12,0.72); backdrop-filter:blur(6px);
     display:flex; align-items:flex-end; justify-content:center; z-index:50;
@@ -192,6 +201,11 @@
 
   <div class="note">قیمت‌ها به <b>تومان</b> نمایش داده می‌شوند و ممکن است به‌روزرسانی شوند.<br>برای خرید، از منوی اصلی ربات گزینه «🛍 خرید سرویس» را بزنید.</div>
 
+  <div class="support-box">
+    <span>🎧 پشتیبانی</span>
+    <a href="https://t.me/abmin_the_wolf_xr" target="_blank">@abmin_the_wolf_xr</a>
+  </div>
+
   <div class="admin-trigger" id="admin-trigger">🔒 ورود ادمین</div>
 </div>
 
@@ -241,25 +255,34 @@ function toast(msg, type){
 
 // --- خواندن قیمت‌های فعلی از query string (ربات هر بار دکمه رو با قیمت زنده می‌سازه) ---
 const qs = new URLSearchParams(window.location.search);
+function numOr(val, fallback){
+  const n = parseInt(val, 10);
+  return (val === null || val === undefined || isNaN(n)) ? fallback : n;
+}
+
 const prices = {
-  normal:  parseInt(qs.get('n'))  || 10000,
-  iranspeedy: parseInt(qs.get('i')) || 7000,
-  star:    parseInt(qs.get('s'))  || 300000,
-  u1:      parseInt(qs.get('u1')) || 300000,
-  u2:      parseInt(qs.get('u2')) || 500000,
-  surcharge: (function(){ const v = parseInt(qs.get('sp')); return isNaN(v) ? 65 : v; })()
+  normal:     numOr(qs.get('n'),  10000),
+  iranspeedy: numOr(qs.get('i'),  7000),
+  star:       numOr(qs.get('s'),  300000),
+  u1:         numOr(qs.get('u1'), 300000),
+  u2:         numOr(qs.get('u2'), 500000),
+  surcharge:  numOr(qs.get('sp'), 65)
 };
 
 const GIGS_NORMAL = [10,20,30,40,50,60,70,80,90,100];
 const GIGS_IRANSPEEDY = [10,20,30,40,50,60,70,80,90,100];
 const GIGS_STAR = [1,2,3];
 
-function fmt(n){ return n.toLocaleString('en-US') + ' ت'; }
+function fmt(n){
+  if (typeof n !== 'number' || isNaN(n)) return '—';
+  return n.toLocaleString('en-US') + ' ت';
+}
 
 function finalPrice(perGig, gig, users){
   const extra = Math.max(0, users - 1);
   const mult = 1 + (prices.surcharge / 100) * extra;
-  return Math.round((perGig * gig * mult) / 1000) * 1000;
+  const result = Math.round((perGig * gig * mult) / 1000) * 1000;
+  return isNaN(result) ? 0 : result;
 }
 
 function renderRows(containerId, perGig, gigs, maxUsers){
