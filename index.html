@@ -247,7 +247,7 @@ const prices = {
   star:    parseInt(qs.get('s'))  || 300000,
   u1:      parseInt(qs.get('u1')) || 300000,
   u2:      parseInt(qs.get('u2')) || 500000,
-  surcharge: parseInt(qs.get('sp')) ?? 65
+  surcharge: (function(){ const v = parseInt(qs.get('sp')); return isNaN(v) ? 65 : v; })()
 };
 
 const GIGS_NORMAL = [10,20,30,40,50,60,70,80,90,100];
